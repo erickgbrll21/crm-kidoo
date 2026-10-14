@@ -1,0 +1,25 @@
+{
+  "name": "kidoo-revenue-crm",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,gray \"npm run dev -w @kidoo/api\" \"npm run dev -w @kidoo/web\"",
+    "dev:api": "npm run dev --workspace @kidoo/api",
+    "dev:web": "npm run dev --workspace @kidoo/web",
+    "build": "npm run build --workspace @kidoo/api && npm run build --workspace @kidoo/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:push": "npx supabase db push",
+    "db:seed": "npm run seed --workspace @kidoo/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
