@@ -4,9 +4,8 @@
     "api": {
       "root": "apps/api",
       "framework": "express",
-      "entrypoint": "server.js",
-      "installCommand": "cd ../.. && npm install && npm run build --workspace @kidoo/api",
-      "buildCommand": "cd ../.. && npm run build --workspace @kidoo/api"
+      "entrypoint": "server.cjs",
+      "installCommand": "cd ../.. && npm install"
     },
     "web": {
       "root": "apps/web",
