@@ -38,7 +38,7 @@ export default function LoginPage() {
       return;
     }
     toast.success('Bem-vindo de volta');
-    router.replace(safeNext(search.get('from')));
+    router.replace(safeNext(search?.get('from') ?? null));
   };
 
   return (

@@ -18,7 +18,7 @@ export function GuestOnly({ children }: { children: React.ReactNode }) {
   const search = useSearchParams();
   const router = useRouter();
   const mounted = useMounted();
-  const next = safeNext(search.get('from'));
+  const next = safeNext(search?.get('from') ?? null);
   const block = !mounted || loading || !!session;
   useEffect(() => {
     if (mounted && !loading && session) router.replace(next);
@@ -28,7 +28,7 @@ export function GuestOnly({ children }: { children: React.ReactNode }) {
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '/';
   const router = useRouter();
   const mounted = useMounted();
   const block = !mounted || loading || !session || !profile;

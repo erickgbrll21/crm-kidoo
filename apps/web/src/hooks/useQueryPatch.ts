@@ -3,10 +3,12 @@
 import { useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+const emptyParams = new URLSearchParams();
+
 /** Atualiza a query string sem perder os outros parâmetros (ex.: ?lead=). */
 export function useQueryPatch() {
-  const params = useSearchParams();
-  const pathname = usePathname();
+  const params = useSearchParams() ?? emptyParams;
+  const pathname = usePathname() ?? '/';
   const router = useRouter();
   const setParams = useCallback(
     (mutate: (p: URLSearchParams) => URLSearchParams) => {

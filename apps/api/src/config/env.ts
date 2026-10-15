@@ -26,4 +26,9 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
-export const corsOrigins = env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+
+const vercelHosts = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+  .filter((host): host is string => !!host)
+  .map((host) => (host.startsWith('http') ? host : `https://${host}`));
+
+export const corsOrigins = [...new Set([...env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean), ...vercelHosts])];

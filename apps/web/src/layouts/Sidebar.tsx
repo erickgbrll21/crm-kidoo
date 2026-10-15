@@ -68,7 +68,7 @@ export function KidooMark({ className, tone = 'on-dark' }: { className?: string;
 
 export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const { can } = useAuth();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '/';
   return (
     <nav aria-label="Principal" className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4">
       {NAV.map((g) => {
