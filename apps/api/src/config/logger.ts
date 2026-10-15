@@ -7,5 +7,8 @@ export const logger = pino({
     paths: ['req.headers.authorization', 'req.headers["x-webhook-secret"]', 'req.headers["x-cron-secret"]', '*.email', '*.phone'],
     censor: '[redacted]',
   },
-  transport: env.NODE_ENV === 'development' ? { target: 'pino-pretty', options: { colorize: true } } : undefined,
+  transport:
+    env.NODE_ENV === 'development' && !process.env.VERCEL
+      ? { target: 'pino-pretty', options: { colorize: true } }
+      : undefined,
 });

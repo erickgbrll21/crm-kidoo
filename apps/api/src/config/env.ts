@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default(process.env.VERCEL ? 'production' : 'development'),
   PORT: z.coerce.number().default(4000),
   SUPABASE_URL: z.url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
@@ -10,7 +12,7 @@ const schema = z.object({
   CRON_SECRET: z.string().min(24).optional(),
   ENABLE_SCHEDULER: z
     .enum(['true', 'false'])
-    .default('true')
+    .default(process.env.VERCEL ? 'false' : 'true')
     .transform((v) => v === 'true'),
   APP_URL: z.url().default('http://localhost:5173'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
@@ -21,8 +23,9 @@ const schema = z.object({
 
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
-  console.error('Variáveis de ambiente inválidas:', z.flattenError(parsed.error).fieldErrors);
-  process.exit(1);
+  const fields = z.flattenError(parsed.error).fieldErrors;
+  console.error('Variáveis de ambiente inválidas:', fields);
+  throw new Error(`Variáveis de ambiente inválidas: ${Object.keys(fields).join(', ')}`);
 }
 
 export const env = parsed.data;
