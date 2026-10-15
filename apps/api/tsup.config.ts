@@ -7,6 +7,7 @@ export default defineConfig({
   platform: 'node',
   sourcemap: true,
   clean: true,
+  outExtension: () => ({ js: '.mjs' }),
   // O pacote compartilhado é TypeScript puro; precisa ser embutido no bundle.
   noExternal: ['@kidoo/shared'],
 });
