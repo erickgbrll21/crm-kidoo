@@ -54,7 +54,7 @@ Idempotência por `source + event_id`. Duplicata de empresa (CNPJ, e-mail, telef
 
 ### Front (Vercel)
 
-- Root: repositório. Build: `npm run build --workspace @kidoo/web`. Output: `apps/web/dist`.
+- Root: repositório. Build: `npm run build --workspace @kidoo/web`. A Vercel usa o output do Next (`.next`); não defina `outputDirectory`.
 - Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (URL pública da API, sem barra no final).
 - Redirect do Auth no Supabase: `https://seu-app.vercel.app/redefinir-senha`.
 
