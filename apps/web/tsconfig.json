@@ -11,6 +11,6 @@
     "paths": { "@/*": ["./src/*"] },
     "types": ["vitest/globals"]
   },
-  "include": ["next-env.d.ts", "src", "app", "pages", "vitest.config.ts", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "src", "app", "vitest.config.ts", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

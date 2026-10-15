@@ -11,9 +11,7 @@ try {
 const nextConfig: NextConfig = {
   outputFileTracingRoot: root,
   transpilePackages: ['@kidoo/shared'],
-  serverExternalPackages: ['pino', 'pino-http', 'express', '@supabase/supabase-js'],
   webpack: (config) => {
-    config.resolve.modules = [path.join(root, 'node_modules'), ...(config.resolve.modules ?? ['node_modules'])];
     config.resolve.extensionAlias = {
       ...config.resolve.extensionAlias,
       '.js': ['.ts', '.tsx', '.js'],

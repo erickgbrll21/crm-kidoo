@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "api",
+      "framework": "express",
+      "entrypoint": "dist/server.js",
+      "installCommand": "cd ../.. && npm install",
+      "buildCommand": "cd ../.. && npm run build --workspace @kidoo/api"
+    },
+    "web": {
+      "root": "web",
+      "framework": "nextjs",
+      "installCommand": "cd ../.. && npm install",
+      "buildCommand": "cd ../.. && npm run build --workspace @kidoo/web"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": { "service": "api" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
+  ]
+}
