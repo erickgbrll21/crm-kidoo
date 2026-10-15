@@ -1,6 +1,6 @@
 # Kidoo Revenue CRM — orientações para agentes
 
-CRM comercial B2B da Kidoo Hub. Stack: React + Vite + TypeScript no `apps/web`, Express + TypeScript no `apps/api`, Postgres no Supabase. O browser fala com a API; a API fala com o Supabase usando `service_role`. A chave `service_role` nunca vai para o cliente.
+CRM comercial B2B da Kidoo Hub. Stack: React + Next.js + TypeScript no `apps/web`, Express + TypeScript no `apps/api`, Postgres no Supabase. O browser fala com a API; a API fala com o Supabase usando `service_role`. A chave `service_role` nunca vai para o cliente.
 
 ## Skills aplicadas
 
@@ -8,7 +8,7 @@ CRM comercial B2B da Kidoo Hub. Stack: React + Vite + TypeScript no `apps/web`, 
 - **Impeccable** (modo Operate) — interface de produto, identidade musgo `#353F34` / `#2A3229` / `#FFFFFF`, Inter, Lucide. Sem roxo/índigo/azul de marca. Sem glassmorphism. Documentado em `PRODUCT.md` e `DESIGN.md`.
 - **Find Skills** — consultada; as skills já no repo que agregam valor concreto foram mantidas: `supabase-postgres-best-practices` e `vercel-react-best-practices`. Não instalar skill extra só por ter o nome da tecnologia.
 - **Supabase Postgres** — UUID, `numeric(14,2)` para dinheiro, RLS ligado, índices nas FKs e filtros, escritas em funções SQL transacionais, Realtime só nas tabelas necessárias.
-- **Vercel React** — chunks de charts, lazy das páginas pesadas, queries paralelas no dashboard, imports diretos.
+- **Vercel React** — cada rota do App Router carrega a própria página (gráficos inclusive), queries paralelas no dashboard, imports diretos.
 
 ## Padrões
 
@@ -34,7 +34,7 @@ Migrations: `supabase/migrations`. Aplicar com `npx supabase db push` no projeto
 
 ## O que não fazer
 
-- Não expor `SUPABASE_SERVICE_ROLE_KEY` no Vite.
+- Não expor `SUPABASE_SERVICE_ROLE_KEY` no Next (`NEXT_PUBLIC_*` vai para o browser).
 - Não inventar dados na mensagem de follow-up: omitir a frase se o diagnóstico não existir.
 - Não tratar proposta aceita como contrato assinado.
 - Não usar LocalStorage para leads, pipeline ou sessão de negócio (só preferência de UI: sidebar recolhida).

@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { useQueryPatch } from '@/hooks/useQueryPatch';
 
 /** O dossiê aberto vive na URL (?lead=id): funciona em qualquer tela e pode ser compartilhado. */
 export function useLeadDrawer() {
-  const [params, setParams] = useSearchParams();
+  const [params, setParams] = useQueryPatch();
   const leadId = params.get('lead');
   const open = useCallback(
     (id: string) =>

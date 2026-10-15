@@ -2,11 +2,15 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "noEmit": true,
-    "types": ["vite/client", "vitest/globals"],
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "allowJs": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
+    "types": ["vitest/globals"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["next-env.d.ts", "src", "app", "vitest.config.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

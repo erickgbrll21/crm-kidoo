@@ -1,4 +1,6 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source '../';
+@source '../../app';
 @import '@fontsource-variable/inter';
 
 @theme {

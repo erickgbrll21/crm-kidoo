@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useQueryPatch } from '@/hooks/useQueryPatch';
 import { addDays } from 'date-fns';
 import { toast } from 'sonner';
 import { Check, Copy, MessageCircle, MessagesSquare, Pause, Pencil, Plus } from 'lucide-react';
@@ -19,7 +19,7 @@ import { FollowupDialog } from '@/features/followups/FollowupDialog';
 type View = 'overdue' | 'today' | 'upcoming' | 'all';
 
 export default function FollowupsPage() {
-  const [params, setParams] = useSearchParams();
+  const [params, setParams] = useQueryPatch();
   const view = (params.get('view') as View) || 'overdue';
   const [owner, setOwner] = useState('');
   const [composeLead, setComposeLead] = useState<string | null>(null);

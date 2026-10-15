@@ -1,4 +1,3 @@
-import { Outlet } from 'react-router';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useUi } from '@/stores/ui';
@@ -7,7 +6,7 @@ import { Header } from './Header';
 import { LeadDrawer } from '@/features/leads/LeadDrawer';
 import { LeadFormDialog } from '@/features/leads/LeadFormDialog';
 
-export function AppShell() {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
   const { newLeadOpen, setNewLead } = useUi();
   useRealtime(!!session);
@@ -18,7 +17,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
         <main className="min-w-0 flex-1">
-          <Outlet />
+          {children}
         </main>
       </div>
       <LeadDrawer />

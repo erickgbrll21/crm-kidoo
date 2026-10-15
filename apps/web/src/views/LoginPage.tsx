@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { safeNext } from '@/routes/guards';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { AuthShell } from '@/layouts/AuthShell';
 import { Field, Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const search = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export default function LoginPage() {
       <AuthShell title="Configuração pendente" description="O CRM precisa das variáveis do Supabase para autenticar.">
         <p className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
           Copie <code className="text-foreground">.env.example</code> para <code className="text-foreground">.env</code> e preencha{' '}
-          <code className="text-foreground">VITE_SUPABASE_URL</code> e <code className="text-foreground">VITE_SUPABASE_ANON_KEY</code>.
+          <code className="text-foreground">NEXT_PUBLIC_SUPABASE_URL</code> e <code className="text-foreground">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
         </p>
       </AuthShell>
     );
@@ -36,7 +38,7 @@ export default function LoginPage() {
       return;
     }
     toast.success('Bem-vindo de volta');
-    navigate((location.state as { from?: string } | null)?.from ?? '/', { replace: true });
+    router.replace(safeNext(search.get('from')));
   };
 
   return (
@@ -67,7 +69,7 @@ export default function LoginPage() {
           Entrar
         </Button>
         <p className="text-center text-[13px]">
-          <Link to="/recuperar-senha" className="font-medium text-moss-800 hover:underline">
+          <Link href="/recuperar-senha" className="font-medium text-moss-800 hover:underline">
             Esqueci minha senha
           </Link>
         </p>

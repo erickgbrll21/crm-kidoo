@@ -1,7 +1,7 @@
 import type { ApiErrorBody } from '@kidoo/shared';
 import { supabase } from './supabase';
 
-const BASE = `${(import.meta.env.VITE_API_URL as string | undefined) ?? ''}/api/v1`;
+const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/v1`;
 
 export class ApiError extends Error {
   constructor(

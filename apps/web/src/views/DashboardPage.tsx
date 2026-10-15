@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import Link from 'next/link';
 import {
   Bar,
   BarChart,
@@ -140,7 +140,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 
 function AlertStat({ label, value, hint, to }: { label: string; value: number; hint: string; to: string }) {
   return (
-    <Link to={to} className="rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-moss-300">
+    <Link href={to} className="rounded-xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-moss-300">
       <p className="flex items-center justify-between text-[12px] text-muted-foreground">
         {label}
         <ArrowUpRight className="size-3.5" aria-hidden />

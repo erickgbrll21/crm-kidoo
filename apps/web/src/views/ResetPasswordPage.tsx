@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { AuthShell } from '@/layouts/AuthShell';
@@ -7,7 +8,7 @@ import { Field, Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 export default function ResetPasswordPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [password, setPassword] = useState('');
@@ -35,7 +36,7 @@ export default function ResetPasswordPage() {
       return;
     }
     toast.success('Senha atualizada');
-    navigate('/', { replace: true });
+    router.replace('/');
   };
 
   if (!ready) return null;
@@ -44,7 +45,7 @@ export default function ResetPasswordPage() {
     return (
       <AuthShell title="Link inválido ou expirado" description="Solicite um novo e-mail de recuperação para continuar.">
         <Button asChild className="w-full">
-          <Link to="/recuperar-senha">Pedir novo link</Link>
+          <Link href="/recuperar-senha">Pedir novo link</Link>
         </Button>
       </AuthShell>
     );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { AuthShell } from '@/layouts/AuthShell';
 import { Field, Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
         </form>
       )}
       <p className="mt-6 text-center text-[13px]">
-        <Link to="/login" className="font-medium text-moss-800 hover:underline">
+        <Link href="/login" className="font-medium text-moss-800 hover:underline">
           Voltar ao login
         </Link>
       </p>

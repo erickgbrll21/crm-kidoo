@@ -1,28 +1,44 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Permission } from '@kidoo/shared';
+import { ShieldOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/common';
-import { ShieldOff } from 'lucide-react';
 
-export function GuestOnly() {
+export function safeNext(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
+export function GuestOnly({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  const location = useLocation();
-  if (loading) return <Boot />;
-  if (session) return <Navigate to={(location.state as { from?: string } | null)?.from ?? '/'} replace />;
-  return <Outlet />;
+  const search = useSearchParams();
+  const router = useRouter();
+  const mounted = useMounted();
+  const next = safeNext(search.get('from'));
+  const block = !mounted || loading || !!session;
+  useEffect(() => {
+    if (mounted && !loading && session) router.replace(next);
+  }, [mounted, loading, session, next, router]);
+  return <Gated block={block}>{children}</Gated>;
 }
 
-export function RequireAuth() {
+export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session, loading, profile } = useAuth();
-  const location = useLocation();
-  if (loading) return <Boot />;
-  if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (!profile) return <Boot />;
-  return <Outlet />;
+  const pathname = usePathname();
+  const router = useRouter();
+  const mounted = useMounted();
+  const block = !mounted || loading || !session || !profile;
+  useEffect(() => {
+    if (mounted && !loading && !session) router.replace(`/login?from=${encodeURIComponent(pathname)}`);
+  }, [mounted, loading, session, pathname, router]);
+  return <Gated block={block}>{children}</Gated>;
 }
 
-export function RequirePermission({ permission }: { permission: Permission }) {
+export function RequirePermission({ permission, children }: { permission: Permission; children: React.ReactNode }) {
   const { can } = useAuth();
   if (!can(permission)) {
     return (
@@ -31,7 +47,22 @@ export function RequirePermission({ permission }: { permission: Permission }) {
       </div>
     );
   }
-  return <Outlet />;
+  return children;
+}
+
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
+
+function Gated({ block, children }: { block: boolean; children: React.ReactNode }) {
+  return (
+    <>
+      {block ? <Boot /> : null}
+      <div hidden={block}>{children}</div>
+    </>
+  );
 }
 
 function Boot() {

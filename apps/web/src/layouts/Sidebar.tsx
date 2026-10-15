@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Building2,
   Cable,
@@ -55,17 +56,19 @@ export const NAV: { group: string; items: Item[] }[] = [
   },
 ];
 
-export function KidooMark({ className }: { className?: string }) {
+export function KidooMark({ className, tone = 'on-dark' }: { className?: string; tone?: 'on-dark' | 'on-light' }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <rect width="32" height="32" rx="8" fill="currentColor" className="text-white/10" />
-      <path d="M11 8v16M11 16l9-8M14.5 13l6.5 11" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
+    <img
+      src="/logo-kidoo.png"
+      alt="Kidoo Hub"
+      className={cn('h-8 w-auto', tone === 'on-light' && 'brightness-0', className)}
+    />
   );
 }
 
 export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const { can } = useAuth();
+  const pathname = usePathname();
   return (
     <nav aria-label="Principal" className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4">
       {NAV.map((g) => {
@@ -76,24 +79,22 @@ export function SidebarNav({ collapsed = false, onNavigate }: { collapsed?: bool
             {!collapsed && <p className="mb-1.5 px-2.5 text-[11px] font-medium text-sidebar-muted/80">{g.group}</p>}
             <ul className="flex flex-col gap-0.5">
               {items.map((item) => {
+                const active = item.to === '/' ? pathname === '/' : pathname === item.to || pathname.startsWith(`${item.to}/`);
                 const link = (
-                  <NavLink
-                    to={item.to}
-                    end={item.to === '/'}
+                  <Link
+                    href={item.to}
                     onClick={onNavigate}
-                    className={({ isActive }) =>
-                      cn(
-                        'group flex h-9 items-center gap-3 rounded-md px-2.5 text-[13.5px] font-medium transition-colors duration-150',
-                        collapsed && 'justify-center px-0',
-                        isActive
-                          ? 'bg-white text-moss-900'
-                          : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                      )
-                    }
+                    className={cn(
+                      'group flex h-9 items-center gap-3 rounded-md px-2.5 text-[13.5px] font-medium transition-colors duration-150',
+                      collapsed && 'justify-center px-0',
+                      active
+                        ? 'bg-white text-moss-900'
+                        : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                    )}
                   >
                     <item.icon className="size-[18px] shrink-0" aria-hidden />
                     {collapsed ? <span className="sr-only">{item.label}</span> : <span className="truncate">{item.label}</span>}
-                  </NavLink>
+                  </Link>
                 );
                 return (
                   <li key={item.to}>
@@ -124,14 +125,8 @@ export function Sidebar() {
         collapsed ? 'w-[68px]' : 'w-[248px]',
       )}
     >
-      <div className={cn('flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4', collapsed && 'justify-center px-0')}>
-        <KidooMark className="size-7 shrink-0" />
-        {!collapsed && (
-          <div className="leading-tight">
-            <p className="text-[14px] font-semibold tracking-[-0.01em]">Kidoo Hub</p>
-            <p className="text-[11px] text-sidebar-muted">Revenue CRM</p>
-          </div>
-        )}
+      <div className={cn('flex h-16 items-center border-b border-sidebar-border px-4', collapsed && 'justify-center px-2')}>
+        <KidooMark className={collapsed ? 'h-4' : 'h-9'} />
       </div>
       <SidebarNav collapsed={collapsed} />
       <div className="border-t border-sidebar-border p-3">

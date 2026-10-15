@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useQueryPatch } from '@/hooks/useQueryPatch';
 import {
   addMonths,
   eachDayOfInterval,
@@ -30,7 +30,7 @@ import { ActivityDialog } from '@/features/activities/ActivityDialog';
 type Tab = 'list' | 'calendar' | 'today' | 'next7' | 'overdue';
 
 export default function AgendaPage() {
-  const [params, setParams] = useSearchParams();
+  const [params, setParams] = useQueryPatch();
   const tab = (params.get('view') as Tab) || 'today';
   const [owner, setOwner] = useState('');
   const [month, setMonth] = useState(new Date());

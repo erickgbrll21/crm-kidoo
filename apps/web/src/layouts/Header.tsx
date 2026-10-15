@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useRouter } from 'next/navigation';
 import { Dialog as D } from 'radix-ui';
 import { Bell, Building2, CheckCheck, LogOut, Menu, Plus, Search, UserRound } from 'lucide-react';
 import { ROLE_LABEL } from '@kidoo/shared';
@@ -130,7 +130,7 @@ function GlobalSearch() {
 function Notifications() {
   const { data, isLoading } = useNotifications();
   const markRead = useMarkRead();
-  const navigate = useNavigate();
+  const router = useRouter();
   const unread = data?.filter((n) => !n.read_at).length ?? 0;
   return (
     <Popover>
@@ -170,7 +170,7 @@ function Notifications() {
                   <button
                     onClick={() => {
                       if (!n.read_at) markRead.mutate(n.id);
-                      if (n.link) navigate(n.link);
+                      if (n.link) router.push(n.link);
                     }}
                     className="flex w-full cursor-pointer gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
                   >
@@ -193,7 +193,7 @@ function Notifications() {
 
 function ProfileMenu() {
   const { profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -208,7 +208,7 @@ function ProfileMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>{profile?.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate('/configuracoes')}>
+        <DropdownMenuItem onSelect={() => router.push('/configuracoes')}>
           <UserRound /> Meu perfil
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => signOut()}>
@@ -232,8 +232,8 @@ export function Header() {
         <D.Portal>
           <D.Overlay className="fixed inset-0 z-50 bg-moss-950/40 lg:hidden" />
           <D.Content className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-sidebar text-sidebar-foreground data-[state=open]:animate-in lg:hidden">
-            <D.Title className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4 text-[14px] font-semibold">
-              <KidooMark className="size-7" /> Kidoo Revenue CRM
+            <D.Title className="flex h-16 items-center border-b border-sidebar-border px-4">
+              <KidooMark className="h-9" />
             </D.Title>
             <D.Description className="sr-only">Navegação principal</D.Description>
             <SidebarNav onNavigate={() => setMobileNav(false)} />
