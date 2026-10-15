@@ -10,10 +10,10 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   WEBHOOK_SECRET: z.string().min(24, 'WEBHOOK_SECRET deve ter ao menos 24 caracteres'),
   CRON_SECRET: z.string().min(24).optional(),
-  ENABLE_SCHEDULER: z
-    .enum(['true', 'false'])
-    .default(process.env.VERCEL ? 'false' : 'true')
-    .transform((v) => v === 'true'),
+  ENABLE_SCHEDULER: z.preprocess(
+    (v) => String(v ?? (process.env.VERCEL ? 'false' : 'true')).trim().toLowerCase(),
+    z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1'),
+  ),
   APP_URL: z.url().default('http://localhost:5173'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   WHATSAPP_BUSINESS_TOKEN: z.string().optional(),
