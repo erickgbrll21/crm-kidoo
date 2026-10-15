@@ -5,7 +5,7 @@ import { startScheduler } from './jobs/scheduler.js';
 
 const app = createApp();
 
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
   const server = app.listen(env.PORT, () => {
     logger.info(`Kidoo Revenue API ouvindo na porta ${env.PORT}`);
   });
