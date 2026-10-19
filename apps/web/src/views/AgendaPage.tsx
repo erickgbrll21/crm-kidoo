@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/menu';
 import { Badge } from '@/components/ui/badge';
 import { ActivityDialog } from '@/features/activities/ActivityDialog';
+import { GoogleCalendarConnect, GoogleCalendarReturnToast } from '@/features/integrations/GoogleCalendarConnect';
 
 type Tab = 'list' | 'calendar' | 'today' | 'next7' | 'overdue';
 
@@ -82,9 +83,8 @@ export default function AgendaPage() {
           ))}
         </NativeSelect>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Google Calendar ainda não está ligado. Esta agenda vive só no CRM até a integração ser configurada.
-      </p>
+      <GoogleCalendarReturnToast />
+      <GoogleCalendarConnect returnTo="agenda" />
 
       {tab === 'calendar' ? (
         <MonthGrid month={month} onMonth={setMonth} items={items} loading={isLoading} error={error} onRetry={() => refetch()} onOpen={open} />

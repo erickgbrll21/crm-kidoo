@@ -35,7 +35,7 @@ CRM proprietário que recebe leads já diagnosticados pelo Antigravity Engine (d
 - Seis etapas de pipeline e status separado "Perdido / Base de Reativação".
 - Termômetro de estagnação: até 24h normal, 24–48h atenção, acima de 48h "Lead Esfriando"; exceções para atividades já agendadas.
 - Valores potenciais nunca se misturam com valores contratados.
-- Integrações não configuradas (WhatsApp Business Platform, Google Calendar) não são apresentadas como funcionais.
+- Integrações não configuradas (WhatsApp Business Platform, Google Calendar) não são apresentadas como funcionais. Google Calendar sincroniza atividades com data para o calendário da pessoa depois do OAuth.
 
 ## Brand Commitments
 

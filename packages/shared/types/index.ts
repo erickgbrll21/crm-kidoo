@@ -182,6 +182,7 @@ export interface Activity {
   status: ActivityStatus;
   completed_at: string | null;
   outcome: string | null;
+  google_event_id?: string | null;
   created_at: string;
   lead?: { id: string; company_name: string } | null;
 }

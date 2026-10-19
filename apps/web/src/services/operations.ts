@@ -149,13 +149,39 @@ export const useMarkRead = () => {
 };
 
 // Integrações ------------------------------------------------------------------
+export interface GoogleCalendarStatus {
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+}
 export interface IntegrationStatus {
   antigravity_webhook: { configured: boolean; endpoint: string };
   wa_me_links: { configured: boolean };
   whatsapp_business: { configured: boolean };
-  google_calendar: { configured: boolean };
+  google_calendar: GoogleCalendarStatus;
 }
 export const useIntegrationStatus = () => useQuery({ queryKey: ['integrations', 'status'], queryFn: () => api.get<IntegrationStatus>('/integrations/status') });
+export const useGoogleCalendarStatus = () =>
+  useQuery({ queryKey: ['integrations', 'google'], queryFn: () => api.get<GoogleCalendarStatus>('/integrations/google/status') });
+export const useStartGoogleCalendarConnect = () =>
+  useMutation({
+    mutationFn: (returnTo: 'agenda' | 'integracoes') => api.get<{ url: string }>('/integrations/google/connect', { return_to: returnTo }),
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+export const useDisconnectGoogleCalendar = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post('/integrations/google/disconnect'),
+    onSuccess: () => {
+      toast.success('Google Calendar desconectado');
+      qc.invalidateQueries({ queryKey: ['integrations'] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+};
 export const useIntegrationEvents = () =>
   useQuery({
     queryKey: ['integrations', 'events'],

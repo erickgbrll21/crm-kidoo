@@ -13,6 +13,7 @@ import { dashboardRouter, reportsRouter } from '../modules/dashboard/dashboard.r
 import { usersRouter } from '../modules/users/users.routes.js';
 import { clientsRouter, onboardingTasksRouter } from '../modules/clients/clients.routes.js';
 import { integrationsRouter, webhooksRouter } from '../modules/integrations/integrations.routes.js';
+import { googleCalendarCallback, googleCalendarRouter } from '../modules/integrations/google-calendar.routes.js';
 import { listNotifications, markRead } from '../modules/notifications/notifications.service.js';
 import { getSettings, updateSettings } from '../modules/settings/settings.service.js';
 import { audit } from '../modules/audit/audit.service.js';
@@ -54,7 +55,9 @@ export const v1 = Router()
   })
   .use('/webhooks', webhooksRouter)
   .use('/jobs', jobsRouter)
+  .get('/integrations/google/callback', googleCalendarCallback)
   .use(authenticate)
+  .use('/integrations/google', googleCalendarRouter)
   .use('/leads', leadsRouter)
   .use('/stages', stagesRouter)
   .use('/activities', activitiesRouter)

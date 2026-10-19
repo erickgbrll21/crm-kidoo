@@ -3,8 +3,9 @@ import { timingSafeEqual } from 'node:crypto';
 import { antigravityWebhook } from '@kidoo/shared';
 import { env } from '../../config/env.js';
 import { db } from '../../config/supabase.js';
-import { requirePermission } from '../../middlewares/auth.js';
+import { currentUser, requirePermission } from '../../middlewares/auth.js';
 import { HttpError, must } from '../../utils/http.js';
+import { connectionStatus } from './google-calendar.js';
 import { ingestLeadEvent } from './webhook.service.js';
 
 const safeEqual = (a: string, b: string) => {
@@ -38,11 +39,11 @@ export const integrationsRouter = Router()
     );
     res.json({ data });
   })
-  .get('/status', (_req: Request, res: Response) => {
+  .get('/status', async (req: Request, res: Response) => {
     res.json({
       antigravity_webhook: { configured: true, endpoint: '/api/v1/webhooks/antigravity' },
       wa_me_links: { configured: true },
       whatsapp_business: { configured: !!(env.WHATSAPP_BUSINESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID) },
-      google_calendar: { configured: !!env.GOOGLE_CALENDAR_CLIENT_ID },
+      google_calendar: await connectionStatus(currentUser(req).id),
     });
   });

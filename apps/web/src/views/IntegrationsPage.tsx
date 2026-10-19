@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Cable, Check, CircleDashed } from 'lucide-react';
 import { SOURCE_LABEL, type LeadSource } from '@kidoo/shared';
 import { useIntegrationEvents, useIntegrationStatus } from '@/services/operations';
@@ -5,6 +6,7 @@ import { dateTime } from '@/lib/format';
 import { EmptyState, ErrorState, PageHeader, Panel, PanelHeader } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { GoogleCalendarConnect, GoogleCalendarReturnToast } from '@/features/integrations/GoogleCalendarConnect';
 
 export default function IntegrationsPage() {
   const status = useIntegrationStatus();
@@ -17,6 +19,7 @@ export default function IntegrationsPage() {
         title="Integrações"
         description="Leads enriquecidos entram pelo webhook. WhatsApp Business e Google Calendar só aparecem como ativos quando configurados."
       />
+      <GoogleCalendarReturnToast />
 
       {status.error ? (
         <ErrorState error={status.error} onRetry={() => status.refetch()} />
@@ -41,13 +44,19 @@ export default function IntegrationsPage() {
           />
           <Card
             title="Google Calendar"
-            ok={s.google_calendar.configured}
+            ok={s.google_calendar.configured && s.google_calendar.connected}
             detail={
-              s.google_calendar.configured
-                ? 'Client ID presente. A sincronização ainda não está ligada — a agenda do CRM é a fonte atual.'
-                : 'Não configurado. Sem simulação de sincronização.'
+              s.google_calendar.connected
+                ? `Conta ${s.google_calendar.email} conectada. Atividades com data vão para esse calendário.`
+                : s.google_calendar.configured
+                  ? 'Credenciais no servidor. Conecte a sua conta Google para sincronizar.'
+                  : 'Não configurado. Sem simulação de sincronização.'
             }
-          />
+          >
+            <div className="mt-3">
+              <GoogleCalendarConnect returnTo="integracoes" />
+            </div>
+          </Card>
         </div>
       )}
 
@@ -116,7 +125,7 @@ export default function IntegrationsPage() {
   );
 }
 
-function Card({ title, ok, detail }: { title: string; ok: boolean; detail: string }) {
+function Card({ title, ok, detail, children }: { title: string; ok: boolean; detail: string; children?: ReactNode }) {
   return (
     <Panel className="p-5">
       <p className="flex items-center gap-2 text-sm font-semibold">
@@ -124,6 +133,7 @@ function Card({ title, ok, detail }: { title: string; ok: boolean; detail: strin
         {title}
       </p>
       <p className="mt-2 text-[13px] text-muted-foreground">{detail}</p>
+      {children}
     </Panel>
   );
 }

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const emptyToUndef = z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().optional());
+
 const schema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -18,7 +20,12 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   WHATSAPP_BUSINESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
-  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_ID: emptyToUndef,
+  GOOGLE_CALENDAR_CLIENT_SECRET: emptyToUndef,
+  GOOGLE_CALENDAR_REDIRECT_URI: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.url().optional(),
+  ),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -29,6 +36,11 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+export const googleCalendarConfigured = () => Boolean(env.GOOGLE_CALENDAR_CLIENT_ID && env.GOOGLE_CALENDAR_CLIENT_SECRET);
+
+export const googleCalendarRedirectUri = () =>
+  env.GOOGLE_CALENDAR_REDIRECT_URI ?? `${env.APP_URL.replace(/\/$/, '')}/api/v1/integrations/google/callback`;
 
 const vercelHosts = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
   .filter((host): host is string => !!host)

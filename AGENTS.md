@@ -17,7 +17,7 @@ CRM comercial B2B da Kidoo Hub. Stack: React + Next.js + TypeScript no `apps/web
 - Potencial (leads abertos) não se mistura com contratado (ganhos no período). Conversão = ganhos ÷ (ganhos + perdidos) decididos no recorte.
 - Estagnação conta a partir de `last_interaction_at` (contato real concluído), não de `updated_at`. Atividade futura agendada suspende o alerta.
 - WhatsApp v1 = `wa.me`. Abrir o link não registra envio.
-- Google Calendar e WhatsApp Business só aparecem como ativos se as env vars existirem.
+- Google Calendar só aparece como ligado se `GOOGLE_CALENDAR_CLIENT_ID` e `GOOGLE_CALENDAR_CLIENT_SECRET` existirem **e** a pessoa tiver autorizado a conta. WhatsApp Business idem nas env vars.
 - Jobs de alerta rodam no processo da API (`node-cron`, 10 min) e também em `POST /api/v1/jobs/run` com `x-cron-secret` para hosts que dormem.
 
 ## Comandos

@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { can, canEditLead, type activityCreate, type activityListQuery, type activityUpdate, type Profile } from '@kidoo/shared';
 import { db } from '../../config/supabase.js';
 import { dbError, forbidden, HttpError, must } from '../../utils/http.js';
+import { pushActivityToCalendar } from '../integrations/google-calendar.js';
 import { findRow } from '../leads/leads.repository.js';
 
 type User = Pick<Profile, 'id' | 'role'>;
@@ -49,7 +50,7 @@ export async function createActivity(user: User, input: z.infer<typeof activityC
   }
   const { done, ...fields } = input;
   const isDone = done || input.type === 'note';
-  return must(
+  const created = must(
     await db
       .from('activities')
       .insert({
@@ -62,6 +63,8 @@ export async function createActivity(user: User, input: z.infer<typeof activityC
       .select('*, lead:lead_id(id, company_name)')
       .single(),
   );
+  await pushActivityToCalendar(created);
+  return created;
 }
 
 async function loadOwned(user: User, id: string) {
@@ -74,7 +77,9 @@ export async function updateActivity(user: User, id: string, input: z.infer<type
   const a = await loadOwned(user, id);
   if (a.status === 'done') throw new HttpError(409, 'conflict', 'Atividades concluídas não podem ser editadas');
   if (input.owner_id && input.owner_id !== a.owner_id && !can(user.role, 'leads.assign')) throw forbidden();
-  return must(await db.from('activities').update(input).eq('id', id).select('*, lead:lead_id(id, company_name)').single());
+  const updated = must(await db.from('activities').update(input).eq('id', id).select('*, lead:lead_id(id, company_name)').single());
+  await pushActivityToCalendar(updated);
+  return updated;
 }
 
 export async function completeActivity(user: User, id: string, outcome: string | null | undefined) {
