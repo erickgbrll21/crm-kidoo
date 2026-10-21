@@ -4,10 +4,32 @@ import { db } from '../../config/supabase.js';
 import { dbError, forbidden, HttpError, must } from '../../utils/http.js';
 import { googleCalendarConfigured } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
-import { importGoogleMeetings, pushActivityToCalendar } from '../integrations/google-calendar.js';
+import { importGoogleMeetings, placeMeetingOnPipeline, pushActivityToCalendar } from '../integrations/google-calendar.js';
 import { findRow } from '../leads/leads.repository.js';
 
 type User = Pick<Profile, 'id' | 'role'>;
+
+const ACTIVITY_SELECT =
+  '*, lead:lead_id(id, company_name, niche, estimated_setup, estimated_mrr, stage:stage_id(name, key), lead_contacts(name, email, is_primary))';
+
+function pastedMeetingUrl(description: string | null | undefined) {
+  const found = description?.match(/https?:\/\/\S+/);
+  return found ? found[0].replace(/[),.;]+$/, '').slice(0, 500) : null;
+}
+
+function isScheduledMeeting(a: { type?: string; lead_id?: string | null; due_at?: string | null; status?: string }) {
+  return (a.type === 'call' || a.type === 'meeting') && !!a.lead_id && !!a.due_at && a.status === 'pending';
+}
+
+async function scheduleOnPipeline(actorId: string, activity: { type: string; lead_id: string | null; due_at: string | null; status: string; lead?: { stage?: { name: string; key?: string } | null } | null }) {
+  if (!isScheduledMeeting(activity) || !activity.lead_id) return;
+  try {
+    const stageName = await placeMeetingOnPipeline(actorId, activity.lead_id);
+    if (stageName && activity.lead) activity.lead.stage = { name: stageName, key: 'call_scheduled' };
+  } catch (err) {
+    logger.warn({ err, lead_id: activity.lead_id }, 'Falha ao colocar a reunião no pipeline');
+  }
+}
 
 const startOfDay = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -41,7 +63,7 @@ export async function listActivities(user: User, q: z.infer<typeof activityListQ
       logger.warn({ err }, 'Falha ao importar reuniões do Google Calendar');
     }
   }
-  let query = db.from('activities').select('*, lead:lead_id(id, company_name)', { count: 'exact' });
+  let query = db.from('activities').select(ACTIVITY_SELECT, { count: 'exact' });
   // Closers enxergam a própria agenda; gestão vê a de todos.
   if (!can(user.role, 'leads.write_any')) query = query.eq('owner_id', user.id);
   else if (q.owner_id) query = query.eq('owner_id', q.owner_id);
@@ -81,25 +103,28 @@ export async function createActivity(user: User, input: z.infer<typeof activityC
   }
   const { done, ...fields } = input;
   const isDone = done || input.type === 'note';
+  const meetingUrl = fields.type === 'call' || fields.type === 'meeting' ? pastedMeetingUrl(fields.description) : null;
   const created = must(
     await db
       .from('activities')
       .insert({
         ...fields,
+        ...(meetingUrl ? { meeting_url: meetingUrl } : {}),
         owner_id: input.owner_id ?? user.id,
         created_by: user.id,
         status: isDone ? 'done' : 'pending',
         completed_at: isDone ? new Date().toISOString() : null,
       })
-      .select('*, lead:lead_id(id, company_name)')
+      .select(ACTIVITY_SELECT)
       .single(),
   );
+  await scheduleOnPipeline(user.id, created);
   await pushActivityToCalendar(created);
   return created;
 }
 
 async function loadOwned(user: User, id: string) {
-  const a = must(await db.from('activities').select('id, owner_id, status, lead_id').eq('id', id).maybeSingle());
+  const a = must(await db.from('activities').select('id, owner_id, status, lead_id, type, meeting_url').eq('id', id).maybeSingle());
   if (a.owner_id !== user.id && !can(user.role, 'leads.write_any')) throw forbidden();
   return a;
 }
@@ -108,7 +133,14 @@ export async function updateActivity(user: User, id: string, input: z.infer<type
   const a = await loadOwned(user, id);
   if (a.status === 'done') throw new HttpError(409, 'conflict', 'Atividades concluídas não podem ser editadas');
   if (input.owner_id && input.owner_id !== a.owner_id && !can(user.role, 'leads.assign')) throw forbidden();
-  const updated = must(await db.from('activities').update(input).eq('id', id).select('*, lead:lead_id(id, company_name)').single());
+  const patch: Record<string, unknown> = { ...input };
+  const type = (typeof patch.type === 'string' ? patch.type : a.type) as string;
+  if ((type === 'call' || type === 'meeting') && !a.meeting_url && typeof patch.description === 'string') {
+    const url = pastedMeetingUrl(patch.description);
+    if (url) patch.meeting_url = url;
+  }
+  const updated = must(await db.from('activities').update(patch).eq('id', id).select(ACTIVITY_SELECT).single());
+  await scheduleOnPipeline(user.id, updated);
   await pushActivityToCalendar(updated);
   return updated;
 }
@@ -121,7 +153,7 @@ export async function completeActivity(user: User, id: string, outcome: string |
       .from('activities')
       .update({ status: 'done', completed_at: new Date().toISOString(), outcome: outcome ?? null })
       .eq('id', id)
-      .select('*, lead:lead_id(id, company_name)')
+      .select(ACTIVITY_SELECT)
       .single(),
   );
 }

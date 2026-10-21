@@ -142,6 +142,7 @@ export interface Lead {
   next_activity_at?: string | null;
   next_activity_title?: string | null;
   overdue_count?: number;
+  next_activity_url?: string | null;
 }
 
 export interface LeadContact {
@@ -183,8 +184,17 @@ export interface Activity {
   completed_at: string | null;
   outcome: string | null;
   google_event_id?: string | null;
+  meeting_url?: string | null;
   created_at: string;
-  lead?: { id: string; company_name: string } | null;
+  lead?: {
+    id: string;
+    company_name: string;
+    niche?: string | null;
+    estimated_setup?: number | null;
+    estimated_mrr?: number | null;
+    stage?: { name: string; key?: string } | null;
+    lead_contacts?: { name: string; email?: string | null; is_primary: boolean }[];
+  } | null;
 }
 
 export interface Followup {

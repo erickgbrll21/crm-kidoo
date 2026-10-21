@@ -82,6 +82,19 @@ export const LeadCard = forwardRef<HTMLDivElement, Props>(function LeadCard({ le
         </p>
       )}
 
+      {!won && lead.next_activity_url ? (
+        <a
+          href={lead.next_activity_url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 inline-flex text-[11.5px] font-medium text-moss-800 underline underline-offset-2"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          Link da reunião
+        </a>
+      ) : null}
+
       <div className="mt-2.5 flex items-center justify-between gap-2">
         {won ? (
           <span className="text-[11.5px] font-medium text-success">Contrato fechado</span>

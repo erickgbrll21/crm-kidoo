@@ -33,7 +33,12 @@ export const leadListQuery = paginationSchema.extend({
   niche: z.string().max(120).optional(),
   priority: z.enum(PRIORITIES).optional(),
   sort: z.enum(['created_at', 'value', 'last_interaction']).default('created_at'),
-  archived: z.coerce.boolean().default(false),
+  // Query string: Boolean("false") é true. "false" precisa continuar falso.
+  archived: z.preprocess((value) => {
+    if (value === 'true' || value === '1' || value === true) return true;
+    if (value === 'false' || value === '0' || value === false || value == null || value === '') return false;
+    return value;
+  }, z.boolean()),
 });
 
 export const contactInput = z.object({

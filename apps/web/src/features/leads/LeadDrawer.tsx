@@ -126,8 +126,8 @@ function Dossier({ detail, onClose }: { detail: LeadDetail; onClose: () => void 
     });
   const wa = whatsappLink(lead.contact_phone, message);
   const pending = [
-    ...activities.filter((a) => a.status === 'pending').map((a) => ({ kind: 'activity' as const, id: a.id, title: a.title, due: a.due_at, label: ACTIVITY_LABEL[a.type] })),
-    ...followups.filter((f) => f.status === 'pending').map((f) => ({ kind: 'followup' as const, id: f.id, title: f.title, due: f.due_at, label: 'Follow-up' })),
+    ...activities.filter((a) => a.status === 'pending').map((a) => ({ kind: 'activity' as const, id: a.id, title: a.title, due: a.due_at, label: ACTIVITY_LABEL[a.type], url: a.meeting_url ?? null })),
+    ...followups.filter((f) => f.status === 'pending').map((f) => ({ kind: 'followup' as const, id: f.id, title: f.title, due: f.due_at, label: 'Follow-up', url: null as string | null })),
   ].sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''));
 
   const copy = async () => {
@@ -305,6 +305,11 @@ function Dossier({ detail, onClose }: { detail: LeadDetail; onClose: () => void 
                             {p.label} · {overdue ? 'Atrasada · ' : ''}
                             {relativeDay(p.due)}
                           </p>
+                          {p.url ? (
+                            <a href={p.url} target="_blank" rel="noreferrer" className="mt-0.5 inline-flex text-xs font-medium text-moss-800 underline underline-offset-2">
+                              Link da reunião
+                            </a>
+                          ) : null}
                         </div>
                         {editable && (
                           <Button

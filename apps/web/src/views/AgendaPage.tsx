@@ -17,7 +17,7 @@ import { CalendarDays, Check, ChevronLeft, ChevronRight, Plus } from 'lucide-rea
 import { ACTIVITY_LABEL, type Activity, type ActivityType } from '@kidoo/shared';
 import { useLeadDrawer } from '@/hooks/useLeadDrawer';
 import { useActivities, useCompleteActivity, useUsers, type ActivityFilters } from '@/services/operations';
-import { dateTime, relativeDay } from '@/lib/format';
+import { money, relativeDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { EmptyState, ErrorState, PageHeader, Panel } from '@/components/common';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,31 @@ import { ActivityDialog } from '@/features/activities/ActivityDialog';
 import { GoogleCalendarConnect, GoogleCalendarReturnToast } from '@/features/integrations/GoogleCalendarConnect';
 
 type Tab = 'list' | 'calendar' | 'today' | 'next7' | 'overdue';
+
+function leadStage(lead: Activity['lead']) {
+  return lead?.stage?.name ?? null;
+}
+
+function leadContact(lead: Activity['lead']) {
+  const list = lead?.lead_contacts ?? [];
+  return (list.find((c) => c.is_primary) ?? list[0])?.name ?? null;
+}
+
+function meetingLink(a: Activity) {
+  if (a.meeting_url) return a.meeting_url;
+  const found = a.description?.match(/https?:\/\/\S+/);
+  return found ? found[0].replace(/[),.;]+$/, '') : null;
+}
+
+function pipelineDetail(a: Activity) {
+  const lead = a.lead;
+  const bits = [ACTIVITY_LABEL[a.type as ActivityType], lead?.company_name ?? 'Sem lead', lead?.niche, leadStage(lead), leadContact(lead)].filter(Boolean);
+  const values = [
+    lead?.estimated_setup != null ? `Setup ${money(lead.estimated_setup)}` : null,
+    lead?.estimated_mrr != null ? `MRR ${money(lead.estimated_mrr)}` : null,
+  ].filter(Boolean);
+  return { line: `${bits.join(' · ')} · ${relativeDay(a.due_at)}`, values: values.join(' · '), url: meetingLink(a) };
+}
 
 export default function AgendaPage() {
   const [params, setParams] = useQueryPatch();
@@ -135,13 +160,25 @@ function ActivityList({
   }
   return (
     <Panel className="divide-y divide-border">
-      {items.map((a) => (
+      {items.map((a) => {
+        const detail = pipelineDetail(a);
+        return (
         <div key={a.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => a.lead_id && onOpen(a.lead_id)}>
             <p className="text-sm font-medium">{a.title}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {ACTIVITY_LABEL[a.type as ActivityType]} · {a.lead?.company_name ?? 'Sem lead'} · {relativeDay(a.due_at)}
-            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{detail.line}</p>
+            {detail.values ? <p className="mt-0.5 text-xs text-muted-foreground">{detail.values}</p> : null}
+            {detail.url ? (
+              <a
+                href={detail.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-flex text-xs font-medium text-moss-800 underline underline-offset-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Link da reunião
+              </a>
+            ) : null}
           </div>
           <Badge variant={a.status === 'done' ? 'success' : a.status === 'canceled' ? 'outline' : 'default'}>
             {a.status === 'done' ? 'Concluída' : a.status === 'canceled' ? 'Cancelada' : 'Pendente'}
@@ -152,7 +189,8 @@ function ActivityList({
             </Button>
           )}
         </div>
-      ))}
+        );
+      })}
     </Panel>
   );
 }
@@ -223,16 +261,28 @@ function MonthGrid({
               {loading ? (
                 <Skeleton className="mt-1 h-4" />
               ) : (
-                list.slice(0, 3).map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => a.lead_id && onOpen(a.lead_id)}
-                    className="mt-1 block w-full truncate rounded bg-moss-100 px-1 py-0.5 text-left text-[10px] text-moss-900"
-                    title={`${a.title} · ${dateTime(a.due_at)}`}
-                  >
-                    {a.title}
-                  </button>
-                ))
+                list.slice(0, 3).map((a) => {
+                  const detail = pipelineDetail(a);
+                  return (
+                  <div key={a.id} className="mt-1 rounded bg-moss-100 px-1 py-0.5 text-left text-[10px] leading-tight text-moss-900">
+                    <button
+                      type="button"
+                      onClick={() => a.lead_id && onOpen(a.lead_id)}
+                      className="block w-full text-left"
+                      title={`${a.title} · ${detail.line}${detail.values ? ` · ${detail.values}` : ''}`}
+                    >
+                      <span className="block truncate font-medium">{a.title}</span>
+                      {a.lead?.company_name ? <span className="block truncate font-normal text-moss-700">{a.lead.company_name}</span> : null}
+                      {leadStage(a.lead) ? <span className="block truncate font-normal text-moss-700">{leadStage(a.lead)}</span> : null}
+                    </button>
+                    {detail.url ? (
+                      <a href={detail.url} target="_blank" rel="noreferrer" className="underline" title={detail.url}>
+                        Link da reunião
+                      </a>
+                    ) : null}
+                  </div>
+                  );
+                })
               )}
               {list.length > 3 && <p className="mt-1 text-[10px] text-muted-foreground">+{list.length - 3}</p>}
             </div>

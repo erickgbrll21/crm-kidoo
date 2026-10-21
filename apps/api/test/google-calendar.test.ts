@@ -4,6 +4,7 @@ import { createApp } from '../src/app.js';
 import {
   activityFromGoogleEvent,
   calendarEventFromActivity,
+  stageAfterScheduledMeeting,
   decryptSecret,
   encryptSecret,
   signOAuthState,
@@ -42,8 +43,23 @@ describe('Google Calendar', () => {
       title: 'Alinhamento comercial',
       description: 'Pauta',
       due_at: '2026-10-22T17:00:00.000Z',
+      meeting_url: null,
       canceled: false,
     });
+    expect(
+      activityFromGoogleEvent({
+        id: 'meet',
+        hangoutLink: 'https://meet.google.com/abc-defg-hij',
+        start: { dateTime: '2026-10-22T14:00:00Z' },
+      })?.meeting_url,
+    ).toBe('https://meet.google.com/abc-defg-hij');
+    expect(
+      activityFromGoogleEvent({
+        id: 'video',
+        start: { dateTime: '2026-10-22T14:00:00Z' },
+        conferenceData: { entryPoints: [{ entryPointType: 'video', uri: 'https://meet.google.com/xyz-abcd-efg' }] },
+      })?.meeting_url,
+    ).toBe('https://meet.google.com/xyz-abcd-efg');
     expect(activityFromGoogleEvent({ id: 'all', summary: 'Dia inteiro', start: { date: '2026-10-23' } })?.due_at).toBe('2026-10-23T12:00:00.000Z');
     expect(activityFromGoogleEvent({ id: 'ooo', eventType: 'focusTime', start: { dateTime: '2026-10-22T14:00:00Z' } })).toBeNull();
     expect(activityFromGoogleEvent({ id: 'x', status: 'cancelled', start: { date: '2026-10-23' } })?.canceled).toBe(true);
@@ -60,6 +76,30 @@ describe('Google Calendar', () => {
     expect(event.description).toContain('Clínica Vida Plena');
     expect(event.start.dateTime).toBe('2026-10-20T15:00:00.000Z');
     expect(event.end.dateTime).toBe('2026-10-20T15:30:00.000Z');
+    const withPipeline = calendarEventFromActivity({
+      title: 'Call',
+      description: null,
+      due_at: '2026-10-20T15:00:00.000Z',
+      lead: {
+        company_name: 'Clínica Vida Plena',
+        estimated_setup: 12000,
+        estimated_mrr: 2500,
+        stage: { name: 'Call 15 Min Agendada' },
+        lead_contacts: [{ name: 'Marina', email: 'marina@clinica.com', is_primary: true }],
+      },
+    });
+    expect(withPipeline.description).toContain('Etapa: Call 15 Min Agendada');
+    expect(withPipeline.description).toContain('Contato: Marina (marina@clinica.com)');
+    expect(withPipeline.description).toContain('Setup est.');
+    expect(withPipeline.description).toContain('MRR est.');
+  });
+
+  it('não recua um lead que já passou da call', () => {
+    expect(stageAfterScheduledMeeting('enriched')).toBe('call_scheduled');
+    expect(stageAfterScheduledMeeting('approach')).toBe('call_scheduled');
+    expect(stageAfterScheduledMeeting('call_scheduled')).toBeNull();
+    expect(stageAfterScheduledMeeting('proposal_sent')).toBeNull();
+    expect(stageAfterScheduledMeeting('won')).toBeNull();
   });
 
   it('não finge integração sem credenciais no servidor', async () => {
