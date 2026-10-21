@@ -2,14 +2,45 @@ import type { z } from 'zod';
 import { can, canEditLead, type activityCreate, type activityListQuery, type activityUpdate, type Profile } from '@kidoo/shared';
 import { db } from '../../config/supabase.js';
 import { dbError, forbidden, HttpError, must } from '../../utils/http.js';
-import { pushActivityToCalendar } from '../integrations/google-calendar.js';
+import { googleCalendarConfigured } from '../../config/env.js';
+import { logger } from '../../config/logger.js';
+import { importGoogleMeetings, pushActivityToCalendar } from '../integrations/google-calendar.js';
 import { findRow } from '../leads/leads.repository.js';
 
 type User = Pick<Profile, 'id' | 'role'>;
 
 const startOfDay = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
+function googleWindow(q: z.infer<typeof activityListQuery>) {
+  if (q.from && q.to) return { timeMin: q.from, timeMax: q.to };
+  const now = Date.now();
+  const day = 86_400_000;
+  if (q.view === 'today') {
+    const s = startOfDay();
+    return { timeMin: s.toISOString(), timeMax: new Date(s.getTime() + day).toISOString() };
+  }
+  if (q.view === 'next7') return { timeMin: new Date(now).toISOString(), timeMax: new Date(now + 7 * day).toISOString() };
+  if (q.view === 'overdue') return { timeMin: new Date(now - 30 * day).toISOString(), timeMax: new Date(now).toISOString() };
+  return { timeMin: new Date(now - 30 * day).toISOString(), timeMax: new Date(now + 90 * day).toISOString() };
+}
+
+async function calendarOwners(user: User, q: z.infer<typeof activityListQuery>) {
+  if (!can(user.role, 'leads.write_any')) return [user.id];
+  if (q.owner_id) return [q.owner_id];
+  const { data, error } = await db.from('google_calendar_connections').select('user_id');
+  if (error) throw error;
+  return (data ?? []).map((row) => row.user_id as string);
+}
+
 export async function listActivities(user: User, q: z.infer<typeof activityListQuery>) {
+  if (!q.lead_id && googleCalendarConfigured()) {
+    try {
+      const window = googleWindow(q);
+      await importGoogleMeetings(await calendarOwners(user, q), window.timeMin, window.timeMax);
+    } catch (err) {
+      logger.warn({ err }, 'Falha ao importar reuniões do Google Calendar');
+    }
+  }
   let query = db.from('activities').select('*, lead:lead_id(id, company_name)', { count: 'exact' });
   // Closers enxergam a própria agenda; gestão vê a de todos.
   if (!can(user.role, 'leads.write_any')) query = query.eq('owner_id', user.id);

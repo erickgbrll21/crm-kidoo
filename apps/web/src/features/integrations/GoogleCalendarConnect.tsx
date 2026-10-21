@@ -26,7 +26,7 @@ export function GoogleCalendarConnect({ returnTo }: { returnTo: 'agenda' | 'inte
     return (
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs text-muted-foreground">
-          Sincronizando com <span className="font-medium text-foreground">{s.email}</span>. Atividades com data vão para esse calendário.
+          Sincronizando com <span className="font-medium text-foreground">{s.email}</span>. Reuniões desse calendário entram aqui, e atividades com data vão para lá.
         </p>
         <Button size="sm" variant="outline" loading={disconnect.isPending} onClick={() => disconnect.mutate()}>
           Desconectar

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import {
+  activityFromGoogleEvent,
   calendarEventFromActivity,
   decryptSecret,
   encryptSecret,
@@ -27,6 +28,25 @@ describe('Google Calendar', () => {
   it('rejeita state adulterado', () => {
     const state = signOAuthState('00000000-0000-4000-8000-000000000001', 'agenda');
     expect(() => verifyOAuthState(`${state}x`)).toThrow();
+  });
+
+  it('transforma evento do Google em reunião e ignora o que não é reunião', () => {
+    const meeting = activityFromGoogleEvent({
+      id: 'evt-1',
+      summary: 'Alinhamento comercial',
+      description: 'Pauta',
+      start: { dateTime: '2026-10-22T14:00:00-03:00' },
+    });
+    expect(meeting).toMatchObject({
+      google_event_id: 'evt-1',
+      title: 'Alinhamento comercial',
+      description: 'Pauta',
+      due_at: '2026-10-22T17:00:00.000Z',
+      canceled: false,
+    });
+    expect(activityFromGoogleEvent({ id: 'all', summary: 'Dia inteiro', start: { date: '2026-10-23' } })?.due_at).toBe('2026-10-23T12:00:00.000Z');
+    expect(activityFromGoogleEvent({ id: 'ooo', eventType: 'focusTime', start: { dateTime: '2026-10-22T14:00:00Z' } })).toBeNull();
+    expect(activityFromGoogleEvent({ id: 'x', status: 'cancelled', start: { date: '2026-10-23' } })?.canceled).toBe(true);
   });
 
   it('monta o evento com lead e 30 minutos', () => {
