@@ -42,7 +42,7 @@ export function createFakeDb() {
         data: { user: null },
         error: { message: 'invalid' },
       })),
-      admin: { inviteUserByEmail: vi.fn() },
+      admin: { createUser: vi.fn() },
     },
     storage: { from: vi.fn() },
   };

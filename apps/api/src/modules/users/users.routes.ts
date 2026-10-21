@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { can, userInvite, userUpdate } from '@kidoo/shared';
 import { z } from 'zod';
-import { env } from '../../config/env.js';
 import { db } from '../../config/supabase.js';
 import { currentUser, forgetUser, requirePermission } from '../../middlewares/auth.js';
 import { forbidden, HttpError, must } from '../../utils/http.js';
@@ -34,11 +33,14 @@ export const usersRouter = Router()
   })
   .post('/invite', requirePermission('users.manage'), async (req: Request, res: Response) => {
     const input = userInvite.parse(req.body);
-    const { data, error } = await db.auth.admin.inviteUserByEmail(input.email, {
-      data: { full_name: input.full_name },
-      redirectTo: `${env.APP_URL}/redefinir-senha`,
+    const { data, error } = await db.auth.admin.createUser({
+      email: input.email,
+      password: input.password,
+      email_confirm: true,
+      user_metadata: { full_name: input.full_name },
+      app_metadata: { role: input.role },
     });
-    if (error) throw new HttpError(422, 'invite_failed', `Não foi possível convidar: ${error.message}`);
+    if (error) throw new HttpError(422, 'invite_failed', `Não foi possível criar a conta: ${error.message}`);
     // O trigger cria o perfil como closer; o papel definitivo é gravado aqui, pelo servidor.
     const profile = must(
       await db.from('profiles').update({ role: input.role, full_name: input.full_name }).eq('id', data.user.id).select(FIELDS).single(),
