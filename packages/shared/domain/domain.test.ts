@@ -4,7 +4,7 @@ import { buildCadence, followupMessage, whatsappLink } from './followups.js';
 import { computeFunnel, computeSummary, type MetricLead } from './metrics.js';
 import { can, canEditLead } from './permissions.js';
 import { DEFAULT_SETTINGS } from './settings.js';
-import { antigravityWebhook, leadUpdate } from '../schemas/index.js';
+import { antigravityWebhook, leadUpdate, userInvite } from '../schemas/index.js';
 
 const now = new Date('2026-10-14T12:00:00Z');
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
@@ -136,5 +136,10 @@ describe('schemas', () => {
       source: 'antigravity',
     });
     expect(r.success).toBe(true);
+  });
+  it('exige senha de pelo menos 8 caracteres ao criar conta', () => {
+    const base = { email: 'ana@kidoohub.com', full_name: 'Ana', role: 'closer' as const };
+    expect(userInvite.safeParse({ ...base, password: 'curta' }).success).toBe(false);
+    expect(userInvite.safeParse({ ...base, password: 'senha1234' }).success).toBe(true);
   });
 });

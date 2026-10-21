@@ -186,6 +186,7 @@ export const userInvite = z.object({
   email: z.email(),
   full_name: z.string().trim().min(2).max(120),
   role: z.enum(ROLES),
+  password: z.string().min(8).max(128),
 });
 
 export const clientUpdate = z.object({
