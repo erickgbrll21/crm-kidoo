@@ -86,6 +86,33 @@ export function googleAuthUrl(userId: string, returnTo: CalendarReturnTo) {
   return `${AUTH_URL}?${params}`;
 }
 
+const SKIP_EVENT_TYPES = new Set(['workingLocation', 'birthday', 'focusTime']);
+
+export type GoogleEventInput = {
+  id?: string;
+  status?: string;
+  summary?: string;
+  description?: string;
+  eventType?: string;
+  start?: { dateTime?: string; date?: string };
+};
+
+/** Evento do Google que vira reunião na agenda. `null` quando não é uma reunião. */
+export function activityFromGoogleEvent(ev: GoogleEventInput) {
+  if (!ev.id || (ev.eventType && SKIP_EVENT_TYPES.has(ev.eventType))) return null;
+  const raw = ev.start?.dateTime ?? (ev.start?.date ? `${ev.start.date}T12:00:00.000Z` : null);
+  if (!raw) return null;
+  const due = new Date(raw);
+  if (Number.isNaN(due.getTime())) return null;
+  return {
+    google_event_id: ev.id,
+    title: (ev.summary?.trim() || 'Reunião').slice(0, 200),
+    description: ev.description?.trim() ? ev.description.trim().slice(0, 4000) : null,
+    due_at: due.toISOString(),
+    canceled: ev.status === 'cancelled',
+  };
+}
+
 export function calendarEventFromActivity(a: Pick<CalendarActivity, 'title' | 'description' | 'due_at' | 'lead'>) {
   const start = new Date(a.due_at!);
   const end = new Date(start.getTime() + 30 * 60_000);
@@ -222,6 +249,91 @@ async function deleteGoogleEvent(token: string, eventId: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok && res.status !== 404 && res.status !== 410) throw new Error(`delete event ${res.status}`);
+}
+
+async function listGoogleEvents(token: string, timeMin: string, timeMax: string) {
+  const events: GoogleEventInput[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 4; page++) {
+    const params = new URLSearchParams({
+      timeMin,
+      timeMax,
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      showDeleted: 'true',
+      maxResults: '250',
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+    const body = await googleJson(`${EVENTS_URL}?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (Array.isArray(body.items)) events.push(...(body.items as GoogleEventInput[]));
+    pageToken = typeof body.nextPageToken === 'string' ? body.nextPageToken : undefined;
+    if (!pageToken) break;
+  }
+  return events;
+}
+
+/** Traz reuniões do Google para `activities`, casando pelo id do evento. Falha de um usuário não interrompe os outros. */
+export async function importGoogleMeetings(ownerIds: string[], timeMin: string, timeMax: string) {
+  if (!googleCalendarConfigured() || ownerIds.length === 0) return;
+  for (const ownerId of ownerIds) {
+    try {
+      await importOwnerMeetings(ownerId, timeMin, timeMax);
+    } catch (err) {
+      logger.warn({ err, owner_id: ownerId }, 'Falha ao importar reuniões do Google Calendar');
+    }
+  }
+}
+
+async function importOwnerMeetings(ownerId: string, timeMin: string, timeMax: string) {
+  const conn = await getConnection(ownerId);
+  if (!conn) return;
+  const token = await accessTokenFor(conn);
+  const mapped = new Map<string, NonNullable<ReturnType<typeof activityFromGoogleEvent>>>();
+  for (const ev of await listGoogleEvents(token, timeMin, timeMax)) {
+    const row = activityFromGoogleEvent(ev);
+    if (row) mapped.set(row.google_event_id, row);
+  }
+  if (mapped.size === 0) return;
+
+  const { data, error } = await db
+    .from('activities')
+    .select('id, google_event_id, status, title, due_at')
+    .eq('owner_id', ownerId)
+    .in('google_event_id', [...mapped.keys()]);
+  if (error) throw error;
+  const existing = new Map((data ?? []).map((row) => [row.google_event_id as string, row]));
+
+  const toInsert: Record<string, unknown>[] = [];
+  for (const meeting of mapped.values()) {
+    const row = existing.get(meeting.google_event_id);
+    if (!row) {
+      if (!meeting.canceled) {
+        toInsert.push({
+          owner_id: ownerId,
+          created_by: ownerId,
+          type: 'meeting',
+          title: meeting.title,
+          description: meeting.description,
+          due_at: meeting.due_at,
+          google_event_id: meeting.google_event_id,
+          status: 'pending',
+        });
+      }
+      continue;
+    }
+    if (row.status !== 'pending') continue;
+    if (meeting.canceled) {
+      await db.from('activities').update({ status: 'canceled' }).eq('id', row.id);
+      continue;
+    }
+    const sameTime = row.due_at && new Date(row.due_at).getTime() === new Date(meeting.due_at).getTime();
+    if (row.title === meeting.title && sameTime) continue;
+    await db.from('activities').update({ title: meeting.title, due_at: meeting.due_at }).eq('id', row.id);
+  }
+  if (toInsert.length) {
+    const { error: insertError } = await db.from('activities').insert(toInsert);
+    if (insertError) throw insertError;
+  }
 }
 
 /** shortcut: só o calendário do owner atual; troca de responsável deixa o evento antigo no Google. */

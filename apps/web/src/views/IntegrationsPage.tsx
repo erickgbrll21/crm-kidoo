@@ -47,7 +47,7 @@ export default function IntegrationsPage() {
             ok={s.google_calendar.configured && s.google_calendar.connected}
             detail={
               s.google_calendar.connected
-                ? `Conta ${s.google_calendar.email} conectada. Atividades com data vão para esse calendário.`
+                ? `Conta ${s.google_calendar.email} conectada. Reuniões desse calendário entram na agenda, e atividades com data vão para lá.`
                 : s.google_calendar.configured
                   ? 'Credenciais no servidor. Conecte a sua conta Google para sincronizar.'
                   : 'Não configurado. Sem simulação de sincronização.'
