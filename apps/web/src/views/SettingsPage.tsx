@@ -72,26 +72,41 @@ function UsersSection() {
   const invite = useInviteUser();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('closer');
   return (
     <Panel>
-      <PanelHeader title="Usuários" description="Convites saem por e-mail do Supabase Auth. O papel é gravado no servidor, não no cliente." />
+      <PanelHeader title="Usuários" description="A conta já nasce com a senha definida aqui. O papel é gravado no servidor, não no cliente." />
       <form
         className="flex flex-wrap gap-2 border-b border-border px-5 py-4"
         onSubmit={(e) => {
           e.preventDefault();
-          invite.mutate({ email, full_name: name, role }, { onSuccess: () => { setEmail(''); setName(''); } });
+          invite.mutate(
+            { email, full_name: name, role, password },
+            { onSuccess: () => { setEmail(''); setName(''); setPassword(''); } },
+          );
         }}
       >
-        <Input required placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} className="w-40" />
-        <Input required type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="w-56" />
+        <Input required placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} className="w-40" autoComplete="off" />
+        <Input required type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="w-56" autoComplete="off" />
+        <Input
+          required
+          type="password"
+          placeholder="Senha"
+          minLength={8}
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-40"
+          title="Mínimo de 8 caracteres"
+        />
         <NativeSelect value={role} onChange={(e) => setRole(e.target.value as Role)} className="w-44">
           <option value="admin">Administrador</option>
           <option value="manager">Gestor Comercial</option>
           <option value="closer">Closer</option>
         </NativeSelect>
         <Button type="submit" size="sm" loading={invite.isPending}>
-          Convidar
+          Criar conta
         </Button>
       </form>
       <div className="overflow-x-auto">

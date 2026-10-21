@@ -111,9 +111,9 @@ export const useUpdateUser = () => {
 export const useInviteUser = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { email: string; full_name: string; role: Role }) => api.post<Profile>('/users/invite', v),
+    mutationFn: (v: { email: string; full_name: string; role: Role; password: string }) => api.post<Profile>('/users/invite', v),
     onSuccess: () => {
-      toast.success('Convite enviado por e-mail');
+      toast.success('Conta criada');
       qc.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (e) => toast.error(errorMessage(e)),
