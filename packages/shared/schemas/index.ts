@@ -193,6 +193,9 @@ export const userInvite = z.object({
   role: z.enum(ROLES),
   password: z.string().min(8).max(128),
 });
+export const userPassword = z.object({
+  password: z.string().min(8).max(128),
+});
 
 export const clientUpdate = z.object({
   onboarding_stage: z.enum(ONBOARDING_STAGES).optional(),

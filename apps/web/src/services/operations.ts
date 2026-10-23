@@ -119,6 +119,23 @@ export const useInviteUser = () => {
     onError: (e) => toast.error(errorMessage(e)),
   });
 };
+export const useResetUserPassword = () =>
+  useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) => api.post<void>(`/users/${id}/password`, { password }),
+    onSuccess: () => toast.success('Senha redefinida'),
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+export const useDeleteUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del<void>(`/users/${id}`),
+    onSuccess: () => {
+      toast.success('Usuário excluído');
+      qc.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+};
 export const useSettings = () => useQuery({ queryKey: ['settings'], queryFn: () => api.get<AppSettings>('/settings'), staleTime: 60_000 });
 export const useUpdateSettings = () => {
   const qc = useQueryClient();

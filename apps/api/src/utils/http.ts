@@ -31,13 +31,15 @@ export function dbError(error: PostgrestError): HttpError {
   return new HttpError(500, 'database_error', 'Erro ao acessar o banco de dados', { code: error.code });
 }
 
-const messageFor = (raw: string) =>
-  (
-    {
-      lead_not_open: 'Este lead não está mais em aberto',
-      followup_already_done: 'Este follow-up já foi concluído',
-    } as Record<string, string>
-  )[raw] ?? 'Operação não permitida no estado atual';
+const DB_MESSAGES: Record<string, string> = {
+  lead_not_open: 'Este lead não está mais em aberto',
+  followup_already_done: 'Este follow-up já foi concluído',
+  self_delete: 'Você não pode excluir a própria conta',
+  last_admin: 'Mantenha pelo menos um administrador',
+  user_still_referenced: 'Este usuário ainda está ligado a um registro que não pode ficar sem responsável',
+};
+
+const messageFor = (raw: string) => DB_MESSAGES[raw] ?? Object.entries(DB_MESSAGES).find(([key]) => raw.includes(key))?.[1] ?? 'Operação não permitida no estado atual';
 
 /** Extrai `data` de uma resposta do Supabase ou lança o erro mapeado. */
 export function must<T>(res: { data: T; error: PostgrestError | null }): NonNullable<T> {

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ROLE_LABEL, SIZE_LABEL, type Role } from '@kidoo/shared';
+import { ROLE_LABEL, SIZE_LABEL, type Profile, type Role } from '@kidoo/shared';
 import { useAuth } from '@/hooks/useAuth';
-import { useInviteUser, useSettings, useUpdateSettings, useUpdateUser, useUsers } from '@/services/operations';
+import { useDeleteUser, useInviteUser, useResetUserPassword, useSettings, useUpdateSettings, useUpdateUser, useUsers } from '@/services/operations';
 import { PageHeader, Panel, PanelHeader } from '@/components/common';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
 import { Field, Input, NativeSelect } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -67,16 +68,20 @@ function ProfileSection() {
 }
 
 function UsersSection() {
+  const { profile } = useAuth();
   const users = useUsers();
   const update = useUpdateUser();
   const invite = useInviteUser();
+  const remove = useDeleteUser();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('closer');
+  const [resetUser, setResetUser] = useState<Profile | null>(null);
+  const [deleteUser, setDeleteUser] = useState<Profile | null>(null);
   return (
     <Panel>
-      <PanelHeader title="Usuários" description="A conta já nasce com a senha definida aqui. O papel é gravado no servidor, não no cliente." />
+      <PanelHeader title="Usuários" description="A conta já nasce com a senha definida aqui. Quem esqueceu a senha recebe uma nova por aqui. Excluir tira o acesso e passa o histórico comercial para você." />
       <form
         className="flex flex-wrap gap-2 border-b border-border px-5 py-4"
         onSubmit={(e) => {
@@ -116,6 +121,7 @@ function UsersSection() {
               <th className="px-5 py-2 font-medium">Pessoa</th>
               <th className="px-3 py-2 font-medium">Papel</th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -138,16 +144,107 @@ function UsersSection() {
                   </NativeSelect>
                 </td>
                 <td className="px-3 py-2.5">
-                  <button onClick={() => update.mutate({ id: u.id, is_active: !u.is_active })} className="cursor-pointer">
+                  <button type="button" onClick={() => update.mutate({ id: u.id, is_active: !u.is_active })} className="cursor-pointer">
                     <Badge variant={u.is_active ? 'success' : 'outline'}>{u.is_active ? 'Ativo' : 'Inativo'}</Badge>
                   </button>
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => setResetUser(u)}>
+                      Redefinir senha
+                    </Button>
+                    {u.id !== profile?.id && (
+                      <Button type="button" size="sm" variant="destructive-outline" onClick={() => setDeleteUser(u)}>
+                        Excluir
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <PasswordDialog user={resetUser} onClose={() => setResetUser(null)} />
+      <ConfirmDialog
+        open={!!deleteUser}
+        onOpenChange={(o) => !o && setDeleteUser(null)}
+        title={deleteUser ? `Excluir ${deleteUser.full_name}?` : 'Excluir usuário?'}
+        description="A conta deixa de entrar no CRM. Leads, atividades, follow-ups e propostas permanecem; o que era dessa pessoa passa para você."
+        confirmLabel="Excluir"
+        onConfirm={() => {
+          if (deleteUser) remove.mutate(deleteUser.id);
+        }}
+      />
     </Panel>
+  );
+}
+
+function PasswordDialog({ user, onClose }: { user: Profile | null; onClose: () => void }) {
+  const reset = useResetUserPassword();
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setPassword('');
+    setConfirm('');
+    setError(null);
+  }, [user?.id]);
+
+  return (
+    <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!user) return;
+            if (password.length < 8) return setError('A senha precisa ter pelo menos 8 caracteres.');
+            if (password !== confirm) return setError('As senhas não coincidem.');
+            setError(null);
+            reset.mutate({ id: user.id, password }, { onSuccess: onClose });
+          }}
+        >
+          <DialogHeader
+            title="Redefinir senha"
+            description={user ? `${user.full_name} passa a entrar com esta senha. A anterior deixa de valer.` : undefined}
+          />
+          <DialogBody className="space-y-4">
+            <Field label="Nova senha" htmlFor="reset-password" error={error ?? undefined}>
+              <Input
+                id="reset-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={!!error}
+                aria-describedby={error ? 'reset-password-error' : undefined}
+              />
+            </Field>
+            <Field label="Confirmar senha" htmlFor="reset-confirm">
+              <Input
+                id="reset-confirm"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </Field>
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" loading={reset.isPending}>
+              Salvar senha
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

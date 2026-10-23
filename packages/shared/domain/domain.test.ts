@@ -4,7 +4,7 @@ import { buildCadence, followupMessage, whatsappLink } from './followups.js';
 import { computeFunnel, computeSummary, type MetricLead } from './metrics.js';
 import { can, canEditLead } from './permissions.js';
 import { DEFAULT_SETTINGS } from './settings.js';
-import { antigravityWebhook, leadListQuery, leadUpdate, userInvite } from '../schemas/index.js';
+import { antigravityWebhook, leadListQuery, leadUpdate, userInvite, userPassword } from '../schemas/index.js';
 
 const now = new Date('2026-10-14T12:00:00Z');
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
@@ -141,6 +141,8 @@ describe('schemas', () => {
     const base = { email: 'ana@kidoohub.com', full_name: 'Ana', role: 'closer' as const };
     expect(userInvite.safeParse({ ...base, password: 'curta' }).success).toBe(false);
     expect(userInvite.safeParse({ ...base, password: 'senha1234' }).success).toBe(true);
+    expect(userPassword.safeParse({ password: 'curta' }).success).toBe(false);
+    expect(userPassword.safeParse({ password: 'senha1234' }).success).toBe(true);
   });
   it('não trata archived=false da query como arquivado', () => {
     expect(leadListQuery.parse({ archived: 'false' }).archived).toBe(false);
